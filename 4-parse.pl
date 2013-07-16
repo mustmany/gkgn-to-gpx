@@ -76,10 +76,11 @@ for my $file ( glob "data/*s.html" ) {
         }
         else {
             my $ang = pi2 / @points;
+            my $r = 0.001 / 2 / sin($ang/2);
             for my $i ( 0 .. $#points ) {
                 my $point = $points[$i];
-                $point->{lon} += 0.001 * sin ( $i * $ang ) / cos( $point->{lat}/180 );
-                $point->{lat} += 0.001 * cos ( $i * $ang );
+                $point->{lon} += $r * sin ( $i * $ang ) / cos( $point->{lat} * pi / 180 );
+                $point->{lat} += $r * cos ( $i * $ang );
                 $gpx->add_waypoint( $point );
             }
         }
