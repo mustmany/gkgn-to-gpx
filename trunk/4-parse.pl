@@ -9,18 +9,17 @@ use Encode::Locale;
 use File::Slurp;
 use List::MoreUtils qw/ natatime /;
 use Geo::Gpx;
+use Math::Trig ':pi';
 
 our $dir = 'gpx';
 mkdir $dir if !-d $dir;
 
-#for my $file ( glob "*s.html" ) {
 for my $file ( glob "data/*s.html" ) {
     my ($fname) = $file =~ m# ^ (?: .*/ )?  (.*?) s\.html#xms;
 
     say STDERR "$file -> $fname.gpx";
     say ".read";
     
-    my $gpx = Geo::Gpx->new();
     my $data = decode 'utf8', read_file $file;
 
     $data =~ s/& (?: \#160 | nbsp ) ; / /gxms;
@@ -36,6 +35,8 @@ for my $file ( glob "data/*s.html" ) {
     /gxms;
 
     say ".parse";
+    my %point;
+
     my $num = 0;
     my $it = natatime 2, @items;
     while ( my ($cnum, $item) = $it->() ) {
@@ -56,13 +57,35 @@ for my $file ( glob "data/*s.html" ) {
         $desc =~ s#(?:\s|<br>)+# #gxms;
         $desc =~ s#\w-\d+-\d+\s*##gxms;
 
-        $gpx->add_waypoint({
-            lat     => $latd + $latm/60 + (rand()-0.5)*0.005,
+        my $key = sprintf "%03d-%02d,%03d-%02d", $latd, $latm, $lond, $lonm;
+        push @{ $point{$key} }, {
+            lat     => $latd + $latm/60, # + (rand()-0.5)*0.005,
             lon     => $lond + $lonm/60,
             name    => "$name ($type)",
             desc    => $desc,
-        });
+        };
     }
+
+
+    my $gpx = Geo::Gpx->new();
+    for my $key ( sort keys %point ) {
+        my @points = sort { $a->{name} cmp $b->{name} }  @{ $point{$key} };
+
+        if ( @points == 1 ) {
+            $gpx->add_waypoint( shift @points );
+        }
+        else {
+            my $ang = pi2 / @points;
+            for my $i ( 0 .. $#points ) {
+                my $point = $points[$i];
+                $point->{lon} += 0.001 * sin ( $i * $ang ) / cos( $point->{lat}/180 );
+                $point->{lat} += 0.001 * cos ( $i * $ang );
+                $gpx->add_waypoint( $point );
+            }
+        }
+
+    }
+
     
     my $xml = $gpx->xml();
     $xml =~ s/\&\#x([\dA-F]{3});/chr(hex($1))/gexms;
