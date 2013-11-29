@@ -31,7 +31,13 @@ for my $file ( glob "data/*s.html" ) {
         (\d{1,5}) (?: \s*<br>\s* | \s+ )    # num
         (?: \d{7} ) \s*<br>\s*              # code
         ( .{50,2000}? )                     # data
-        (?= \n (?: (??{ $1+1 }) (?: \s*<br>\s* | \s+ ) | Стр\. \s+ \d ) )
+        (?= \n
+          (?:
+            <b>                                     # new region (with counter reset)
+            | (??{ $1+1 }) (?: \s*<br>\s* | \s+ )   # num+1
+            | Стр\. \s+ \d                          # page break
+          )
+        )
     /gxms;
 
     say ".parse";
