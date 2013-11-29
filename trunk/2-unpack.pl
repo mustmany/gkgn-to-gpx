@@ -6,7 +6,12 @@ use utf8;
 
 chdir 'data';
 
-`unzip -j '*.zip'`;
+for my $file ( glob '*.zip' ) {
+    say $file;
+    `unzip -j '$file'`;
+}
+# `unzip -j '*.zip'`;
+
 `unrar e '*.rar'`;
 `7z e '*.arj'`;
 
