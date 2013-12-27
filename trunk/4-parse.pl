@@ -19,7 +19,7 @@ for my $file ( glob "data/*s.html" ) {
 
     say STDERR "$file -> $fname.gpx";
     say ".read";
-    
+
     my $data = decode 'utf8', read_file $file;
 
     $data =~ s/& (?: \#160 | nbsp ) ; / /gxms;
@@ -93,10 +93,15 @@ for my $file ( glob "data/*s.html" ) {
 
     }
 
-    
+    my $mtime = [ stat $file ]->[9];
+    $gpx->time($mtime);
+
     my $xml = $gpx->xml();
     $xml =~ s/\&\#x([\dA-F]{3});/chr(hex($1))/gexms;
-    write_file "$dir/$fname.gpx", encode 'utf8', $xml;
+
+    my $outfile = "$dir/$fname.gpx";
+    write_file $outfile, encode 'utf8', $xml;
+    utime $mtime, $mtime, $outfile;
 }
 
 
